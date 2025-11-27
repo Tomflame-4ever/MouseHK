@@ -46,6 +46,17 @@ This is the main way to customize the script. Open `MouseHK.ini` in any text edi
 *   **Drag/Hold:** Shift
 *   **Toggle Mouse:** Shift + Space
 
+#### 🧠 Understanding Behavior Modifiers
+"Behavior Modifiers" are special keys that change *how* the mouse works while you hold them down. Unlike standard modifiers (like Ctrl/Alt), these trigger specific modes in MouseHK:
+
+*   **PrecisionMode (`Shift`):** While held, the cursor moves much slower for precise work (like editing photos or selecting text).
+*   **ScrollMode (`Space`):** While held, your movement keys (WASD/IJKL) turn into scroll wheels.
+    *   *Example:* Hold `Space` + Press `W` = Scroll Up.
+*   **ClickHolder (`Shift`):** While held, clicking a mouse button toggles it "stuck" down (for dragging).
+    *   *Example:* Hold `Shift` + Click `Left` = Left Button Held Down (Drag). Click again to release.
+
+> **Note:** You can change these keys in the `[BehaviorModifiers]` section of the INI file.
+
 ### 2. Script Defaults (Backup)
 If `MouseHK.ini` is deleted or lost, the script automatically falls back to internal default values to ensure you never lose control.
 
