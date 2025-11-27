@@ -107,4 +107,8 @@ A: Edit `MouseHK.ini` and adjust `BaseSpeed` (start speed) and `MaxSpeed` (top s
 *   **Safety:** Smart key suppression to prevent accidental typing.
 
 ---
-*Created by Tomflame with help from [Google Antigravity](https://antigravity.google/)*
+## 🤖 About the Development
+
+This project was created by **Tomflame** with the assistance of **[Google Antigravity](https://antigravity.google/)**, an advanced agentic AI coding assistant designed by the Google Deepmind team.
+
+
