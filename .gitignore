@@ -1,0 +1,11 @@
+# Backups
+*_backup.ahk
+*_backup.ini
+
+# System
+Thumbs.db
+Desktop.ini
+
+# AutoHotkey
+*.exe
+*.bin
