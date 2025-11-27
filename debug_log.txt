@@ -1,4 +1,0 @@
-Raw Value: d|;|ñ
-Key 1: d (Len: 1) - Asc: 100
-Key 2: ; (Len: 1) - Asc: 59
-Key 3: ñ (Len: 1) - Asc: 241
