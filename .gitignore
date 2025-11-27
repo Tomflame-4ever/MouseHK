@@ -1,10 +1,14 @@
 # Backups
 *_backup.ahk
 *_backup.ini
+*Custom.ini
 
 # System
 Thumbs.db
 Desktop.ini
+
+# Debug
+debug_*
 
 # AutoHotkey
 *.exe
