@@ -20,7 +20,7 @@ MouseHK allows you to control your cursor, click, scroll, and drag without ever 
 1.  **Install:** Download and install [AutoHotkey v2](https://www.autohotkey.com/).
 2.  **Download:** Get the latest `MouseHK.ahk` script and `MouseHK.ini`.
 3.  **Run:** Double-click `MouseHK.ahk`.
-4.  **Toggle:** Press **`Ctrl + Numpad0`** (Default INI) or **`Shift + Space`** (Backup) to turn it ON/OFF.
+4.  **Toggle:** Press **`Shift + Space`** to turn it ON/OFF.
     *   🔊 *High Beep* = Mouse Mode ON
     *   🔉 *Low Beep* = Mouse Mode OFF
 
