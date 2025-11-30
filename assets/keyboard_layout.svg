@@ -1,0 +1,271 @@
+<svg width="900" height="350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      /* Base Styles */
+      .key-base { fill: #1a1a1a; stroke: #333; stroke-width: 2; rx: 4; }
+      .key-active { fill: #252525; stroke-width: 3; }
+      
+      /* Text Styles */
+      .text-main { font-family: 'Segoe UI', Arial, sans-serif; fill: #666; font-size: 14px; font-weight: normal; text-anchor: middle; dominant-baseline: middle; }
+      .text-active { fill: #ffffff; font-weight: bold; font-size: 16px; }
+      .text-sub { font-family: 'Segoe UI', Arial, sans-serif; fill: #aaaaaa; font-size: 10px; text-anchor: middle; }
+      .title { font-family: 'Segoe UI', Arial, sans-serif; fill: #ffffff; font-size: 24px; font-weight: bold; text-anchor: middle; letter-spacing: 1px; }
+      
+      /* Highlight Colors (Stroke) */
+      .movement { stroke: #3b82f6; }
+      .click { stroke: #22c55e; }
+      .scroll { stroke: #f97316; }
+      .modifier { stroke: #a855f7; }
+      
+      /* Legend */
+      .legend-text { font-family: 'Segoe UI', Arial, sans-serif; fill: #ccc; font-size: 12px; dominant-baseline: middle; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="900" height="350" fill="#0d0d0d" rx="10" />
+  
+  <!-- Title -->
+  <text x="450" y="30" class="title">MouseHK Default Controls</text>
+
+  <!-- Keyboard Container -->
+  <g transform="translate(20, 60)">
+    
+    <!-- ROW 1 (Numbers - Optional/Dimmed) -->
+    <!-- Skipping Number Row to save space/focus as requested "solo las de letras" -->
+
+    <!-- ROW 2 (QWERTY) -->
+    <g transform="translate(0, 0)">
+      <!-- Tab (1.5u) -->
+      <rect x="0" y="0" width="80" height="50" class="key-base" />
+      <text x="40" y="25" class="text-main">Tab</text>
+
+      <!-- Q (Active) -->
+      <rect x="85" y="0" width="50" height="50" class="key-base key-active click" />
+      <text x="110" y="20" class="text-main text-active">Q</text>
+      <text x="110" y="38" class="text-sub">R-Click</text>
+
+      <!-- W (Active) -->
+      <rect x="140" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="165" y="20" class="text-main text-active">W</text>
+      <text x="165" y="38" class="text-sub">Up</text>
+
+      <!-- E (Active) -->
+      <rect x="195" y="0" width="50" height="50" class="key-base key-active click" />
+      <text x="220" y="20" class="text-main text-active">E</text>
+      <text x="220" y="38" class="text-sub">L-Click</text>
+
+      <!-- R -->
+      <rect x="250" y="0" width="50" height="50" class="key-base" />
+      <text x="275" y="25" class="text-main">R</text>
+
+      <!-- T -->
+      <rect x="305" y="0" width="50" height="50" class="key-base" />
+      <text x="330" y="25" class="text-main">T</text>
+
+      <!-- Y -->
+      <rect x="360" y="0" width="50" height="50" class="key-base" />
+      <text x="385" y="25" class="text-main">Y</text>
+
+      <!-- U -->
+      <rect x="415" y="0" width="50" height="50" class="key-base" />
+      <text x="440" y="25" class="text-main">U</text>
+
+      <!-- I (Active) -->
+      <rect x="470" y="0" width="50" height="50" class="key-base key-active click" />
+      <text x="495" y="20" class="text-main text-active">I</text>
+      <text x="495" y="38" class="text-sub">L-Click</text>
+
+      <!-- O (Active) -->
+      <rect x="525" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="550" y="20" class="text-main text-active">O</text>
+      <text x="550" y="38" class="text-sub">Up</text>
+
+      <!-- P (Active) -->
+      <rect x="580" y="0" width="50" height="50" class="key-base key-active click" />
+      <text x="605" y="20" class="text-main text-active">P</text>
+      <text x="605" y="38" class="text-sub">R-Click</text>
+
+      <!-- [ -->
+      <rect x="635" y="0" width="50" height="50" class="key-base" />
+      <text x="660" y="25" class="text-main">[</text>
+
+      <!-- ] -->
+      <rect x="690" y="0" width="50" height="50" class="key-base" />
+      <text x="715" y="25" class="text-main">]</text>
+
+      <!-- \ (1.5u) -->
+      <rect x="745" y="0" width="80" height="50" class="key-base" />
+      <text x="785" y="25" class="text-main">\</text>
+    </g>
+
+    <!-- ROW 3 (ASDF) -->
+    <g transform="translate(0, 55)">
+      <!-- Caps (1.75u) -->
+      <rect x="0" y="0" width="90" height="50" class="key-base" />
+      <text x="45" y="25" class="text-main">Caps</text>
+
+      <!-- A (Active) -->
+      <rect x="95" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="120" y="20" class="text-main text-active">A</text>
+      <text x="120" y="38" class="text-sub">Left</text>
+
+      <!-- S (Active) -->
+      <rect x="150" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="175" y="20" class="text-main text-active">S</text>
+      <text x="175" y="38" class="text-sub">Down</text>
+
+      <!-- D (Active) -->
+      <rect x="205" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="230" y="20" class="text-main text-active">D</text>
+      <text x="230" y="38" class="text-sub">Right</text>
+
+      <!-- F (Active) -->
+      <rect x="260" y="0" width="50" height="50" class="key-base key-active click" />
+      <text x="285" y="20" class="text-main text-active">F</text>
+      <text x="285" y="38" class="text-sub">M-Click</text>
+
+      <!-- G -->
+      <rect x="315" y="0" width="50" height="50" class="key-base" />
+      <text x="340" y="25" class="text-main">G</text>
+
+      <!-- H -->
+      <rect x="370" y="0" width="50" height="50" class="key-base" />
+      <text x="395" y="25" class="text-main">H</text>
+
+      <!-- J (Active) -->
+      <rect x="425" y="0" width="50" height="50" class="key-base key-active click" />
+      <text x="450" y="20" class="text-main text-active">J</text>
+      <text x="450" y="38" class="text-sub">M-Click</text>
+
+      <!-- K (Active) -->
+      <rect x="480" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="505" y="20" class="text-main text-active">K</text>
+      <text x="505" y="38" class="text-sub">Left</text>
+
+      <!-- L (Active) -->
+      <rect x="535" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="560" y="20" class="text-main text-active">L</text>
+      <text x="560" y="38" class="text-sub">Down</text>
+
+      <!-- ; (Active) -->
+      <rect x="590" y="0" width="50" height="50" class="key-base key-active movement" />
+      <text x="615" y="20" class="text-main text-active">;</text>
+      <text x="615" y="38" class="text-sub">Right</text>
+
+      <!-- ' -->
+      <rect x="645" y="0" width="50" height="50" class="key-base" />
+      <text x="670" y="25" class="text-main">'</text>
+
+      <!-- Enter (2.25u) -->
+      <rect x="700" y="0" width="125" height="50" class="key-base" />
+      <text x="762" y="25" class="text-main">Enter</text>
+    </g>
+
+    <!-- ROW 4 (ZXCV) -->
+    <g transform="translate(0, 110)">
+      <!-- LShift (2.25u) - Active -->
+      <rect x="0" y="0" width="115" height="50" class="key-base key-active modifier" />
+      <text x="57" y="20" class="text-main text-active">Shift</text>
+      <text x="57" y="38" class="text-sub">Precision</text>
+
+      <!-- Z -->
+      <rect x="120" y="0" width="50" height="50" class="key-base" />
+      <text x="145" y="25" class="text-main">Z</text>
+
+      <!-- X -->
+      <rect x="175" y="0" width="50" height="50" class="key-base" />
+      <text x="200" y="25" class="text-main">X</text>
+
+      <!-- C -->
+      <rect x="230" y="0" width="50" height="50" class="key-base" />
+      <text x="255" y="25" class="text-main">C</text>
+
+      <!-- V -->
+      <rect x="285" y="0" width="50" height="50" class="key-base" />
+      <text x="310" y="25" class="text-main">V</text>
+
+      <!-- B -->
+      <rect x="340" y="0" width="50" height="50" class="key-base" />
+      <text x="365" y="25" class="text-main">B</text>
+
+      <!-- N -->
+      <rect x="395" y="0" width="50" height="50" class="key-base" />
+      <text x="420" y="25" class="text-main">N</text>
+
+      <!-- M -->
+      <rect x="450" y="0" width="50" height="50" class="key-base" />
+      <text x="475" y="25" class="text-main">M</text>
+
+      <!-- , -->
+      <rect x="505" y="0" width="50" height="50" class="key-base" />
+      <text x="530" y="25" class="text-main">,</text>
+
+      <!-- . -->
+      <rect x="560" y="0" width="50" height="50" class="key-base" />
+      <text x="585" y="25" class="text-main">.</text>
+
+      <!-- / -->
+      <rect x="615" y="0" width="50" height="50" class="key-base" />
+      <text x="640" y="25" class="text-main">/</text>
+
+      <!-- RShift (2.75u) - Active -->
+      <rect x="670" y="0" width="155" height="50" class="key-base key-active modifier" />
+      <text x="747" y="20" class="text-main text-active">Shift</text>
+      <text x="747" y="38" class="text-sub">Precision</text>
+    </g>
+
+    <!-- ROW 5 (Space) -->
+    <g transform="translate(0, 165)">
+      <!-- Ctrl (1.25u) -->
+      <rect x="0" y="0" width="65" height="50" class="key-base" />
+      <text x="32" y="25" class="text-main">Ctrl</text>
+
+      <!-- Win (1.25u) -->
+      <rect x="70" y="0" width="65" height="50" class="key-base" />
+      <text x="102" y="25" class="text-main">Win</text>
+
+      <!-- Alt (1.25u) -->
+      <rect x="140" y="0" width="65" height="50" class="key-base" />
+      <text x="172" y="25" class="text-main">Alt</text>
+
+      <!-- Space (6.25u) - Active -->
+      <rect x="210" y="0" width="345" height="50" class="key-base key-active scroll" />
+      <text x="382" y="20" class="text-main text-active">Space</text>
+      <text x="382" y="38" class="text-sub">Scroll Mode</text>
+
+      <!-- Alt (1.25u) -->
+      <rect x="560" y="0" width="65" height="50" class="key-base" />
+      <text x="592" y="25" class="text-main">Alt</text>
+
+      <!-- Win (1.25u) -->
+      <rect x="630" y="0" width="65" height="50" class="key-base" />
+      <text x="662" y="25" class="text-main">Win</text>
+
+      <!-- Menu (1.25u) -->
+      <rect x="700" y="0" width="65" height="50" class="key-base" />
+      <text x="732" y="25" class="text-main">Menu</text>
+
+      <!-- Ctrl (1.25u) -->
+      <rect x="770" y="0" width="55" height="50" class="key-base" />
+      <text x="797" y="25" class="text-main">Ctrl</text>
+    </g>
+
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(280, 310)">
+    <circle cx="10" cy="10" r="6" fill="none" stroke="#3b82f6" stroke-width="3" />
+    <text x="25" y="10" class="legend-text">Movement</text>
+    
+    <circle cx="120" cy="10" r="6" fill="none" stroke="#22c55e" stroke-width="3" />
+    <text x="135" y="10" class="legend-text">Clicks</text>
+    
+    <circle cx="200" cy="10" r="6" fill="none" stroke="#f97316" stroke-width="3" />
+    <text x="215" y="10" class="legend-text">Scroll</text>
+    
+    <circle cx="280" cy="10" r="6" fill="none" stroke="#a855f7" stroke-width="3" />
+    <text x="295" y="10" class="legend-text">Modifier</text>
+  </g>
+
+</svg>

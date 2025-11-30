@@ -1,5 +1,5 @@
 ; ========================================================================================
-;  MouseHK (v1.0)
+;  MouseHK (v1.1)
 ;  Created by Tomflame with help from Google Antigravity
 ; ========================================================================================
 
@@ -16,6 +16,7 @@ LoadConfig() {
     Config["PrecisionSpeed"] := 4
     Config["ScrollDelay"] := 6
     Config["SuppressKeys"] := 1
+    Config["StartActive"] := 0
 
     ; Controles (Arrays de teclas)
     Config["Up"] := ["W", "O"]
@@ -25,6 +26,8 @@ LoadConfig() {
     Config["LeftClick"] := ["E", "I"]
     Config["RightClick"] := ["Q", "P"]
     Config["MiddleClick"] := ["F", "J"]
+    Config["Button4"] := []
+    Config["Button5"] := []
 
     ; Default Unified Hotkeys
     Config["ToggleMouse"] := ["+Space"] ; Shift + Space
@@ -32,12 +35,14 @@ LoadConfig() {
     Config["ScrollMode"] := ["Space"]
     Config["ClickHolder"] := ["Shift"]
     Config["ReloadScript"] := ["*^+!#F5"]
+    Config["LockTriggers"] := []
 
     ; --- Leer INI si existe ---
     if FileExist(IniFile) {
         try {
             ; Options
             Config["SuppressKeys"] := IniRead(IniFile, "Options", "SuppressKeys", Config["SuppressKeys"])
+            Config["StartActive"] := IniRead(IniFile, "Options", "StartActive", Config["StartActive"])
 
             ; Movement
             Config["BaseSpeed"] := IniRead(IniFile, "Movement", "BaseSpeed", Config["BaseSpeed"])
@@ -56,6 +61,8 @@ LoadConfig() {
             Config["LeftClick"] := StrSplit(IniRead(IniFile, "Controls", "LeftClick", "Numpad7"), "|")
             Config["RightClick"] := StrSplit(IniRead(IniFile, "Controls", "RightClick", "Numpad9"), "|")
             Config["MiddleClick"] := StrSplit(IniRead(IniFile, "Controls", "MiddleClick", "NumpadDiv"), "|")
+            Config["Button4"] := StrSplit(IniRead(IniFile, "Controls", "Button4", ""), "|")
+            Config["Button5"] := StrSplit(IniRead(IniFile, "Controls", "Button5", ""), "|")
 
             ; Behavior Modifiers
             Config["PrecisionMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "PrecisionMode",
@@ -64,7 +71,21 @@ LoadConfig() {
             Config["ClickHolder"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ClickHolder", "Numpad0"))
 
             ; Hotkeys (Unified Parser)
-            Config["ToggleMouse"] := ParseUnifiedHotkey(IniRead(IniFile, "Hotkeys", "ToggleMouse", "Shift + Space"))
+            rawToggle := IniRead(IniFile, "Hotkeys", "ToggleMouse", "Shift + Space")
+            parsedToggle := ParseUnifiedHotkey(rawToggle)
+
+            ; Separate standard hotkeys from Lock Triggers
+            Config["ToggleMouse"] := []
+            Config["LockTriggers"] := []
+
+            for item in parsedToggle {
+                if (IsLockTrigger(item)) {
+                    Config["LockTriggers"].Push(ParseLockTrigger(item))
+                } else {
+                    Config["ToggleMouse"].Push(item)
+                }
+            }
+
             Config["ReloadScript"] := ParseUnifiedHotkey(IniRead(IniFile, "Hotkeys", "ReloadScript",
                 "Ctrl + Shift + Alt + Win + F5"))
         }
@@ -97,8 +118,14 @@ global UsedKeys := Map()
 ;  INICIALIZACIÓN
 ; ========================================================================================
 
-; Iniciar suspendido
-Suspend True
+; Iniciar suspendido o activo según config
+if (Config["StartActive"]) {
+    Suspend False
+    SyncLockKeys(true)
+} else {
+    Suspend True
+    SyncLockKeys(false)
+}
 
 ; ========================================================================================
 ;  HELPER FUNCTIONS (PARSER)
@@ -150,6 +177,30 @@ ParseUnifiedHotkey(str) {
     return result
 }
 
+IsLockTrigger(str) {
+    str := StrUpper(Trim(str))
+    return (InStr(str, "CAPSLOCK") || InStr(str, "NUMLOCK") || InStr(str, "SCROLLLOCK"))
+    && (InStr(str, " ON") || InStr(str, " OFF"))
+}
+
+ParseLockTrigger(str) {
+    str := StrUpper(Trim(str))
+    key := ""
+    state := 0 ; 0=OFF, 1=ON
+
+    if (InStr(str, "CAPSLOCK"))
+        key := "CapsLock"
+    else if (InStr(str, "NUMLOCK"))
+        key := "NumLock"
+    else if (InStr(str, "SCROLLLOCK"))
+        key := "ScrollLock"
+
+    if (InStr(str, " ON"))
+        state := 1
+
+    return { Key: key, State: state }
+}
+
 IsHotkeyPressed(ahkList) {
     for hotkeyStr in ahkList {
         if (CheckSingleHotkeyState(hotkeyStr))
@@ -182,7 +233,11 @@ CheckSingleHotkeyState(hotkeyStr) {
     if (cleanKey == "")
         return true
 
-    return GetKeyState(cleanKey, "P")
+    try {
+        return GetKeyState(cleanKey, "P")
+    } catch {
+        return false
+    }
 }
 
 CheckModifiers(str, &cleanKey) {
@@ -232,10 +287,60 @@ SetupToggleHotkeys() {
     for hk in Config["ToggleMouse"] {
         try Hotkey "*" . hk, ToggleSuspendAction, "S"
     }
+    SetupLockTriggers()
+}
+
+SetupLockTriggers() {
+    for trigger in Config["LockTriggers"] {
+        ; Bind to the key itself (pass-through with ~) to check state on change
+        try Hotkey "~*" . trigger.Key, CheckLockState, "S"
+    }
+    ; Initial check
+    CheckLockState()
+}
+
+CheckLockState(*) {
+    if (Config["LockTriggers"].Length == 0)
+        return
+
+    shouldBeActive := false
+
+    for trigger in Config["LockTriggers"] {
+        currentState := GetKeyState(trigger.Key, "T") ; T = Toggle State
+        if (currentState == trigger.State) {
+            shouldBeActive := true
+            break
+        }
+    }
+
+    if (shouldBeActive) {
+        if (A_IsSuspended)
+            SetSuspendState(true) ; true = active (confusing naming in helper, let's fix)
+    } else {
+        if (!A_IsSuspended)
+            SetSuspendState(false) ; false = inactive
+    }
 }
 
 ToggleSuspendAction(ThisHotkey) {
     ToggleSuspend()
+}
+
+SyncLockKeys(active) {
+    for trigger in Config["LockTriggers"] {
+        ; If active, we want the state to MATCH the trigger (e.g. CapsLock OFF)
+        ; If inactive, we want the state to be OPPOSITE (e.g. CapsLock ON)
+        targetState := active ? trigger.State : !trigger.State
+
+        stateStr := targetState ? "On" : "Off"
+
+        if (trigger.Key = "CapsLock")
+            SetCapsLockState stateStr
+        else if (trigger.Key = "NumLock")
+            SetNumLockState stateStr
+        else if (trigger.Key = "ScrollLock")
+            SetScrollLockState stateStr
+    }
 }
 
 #SuspendExempt False
@@ -245,15 +350,21 @@ ToggleSuspendAction(ThisHotkey) {
 ; ========================================================================================
 
 ToggleSuspend() {
-    if (A_IsSuspended) {
-        ; --- ACTIVAR ---
+    SetSuspendState(A_IsSuspended) ; Toggle
+}
+
+SetSuspendState(makeActive) {
+    if (makeActive) {
+        ; --- ACTIVAR (Suspend False) ---
         Suspend False
         SoundBeep 1000, 200
+        SyncLockKeys(true)
     } else {
-        ; --- DESACTIVAR ---
+        ; --- DESACTIVAR (Suspend True) ---
         Suspend True
         ClearState()
         SoundBeep 500, 200
+        SyncLockKeys(false)
     }
 }
 
@@ -276,12 +387,8 @@ ClearState() {
 ;  LÓGICA DE SUPRESIÓN INTELIGENTE
 ; ========================================================================================
 
-IsDisablingModifier() {
-    return (GetKeyState("Ctrl", "P") || GetKeyState("Alt", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
-}
-
 IsActiveContext(HotkeyName) {
-    return !A_IsSuspended && !IsDisablingModifier()
+    return !A_IsSuspended
 }
 
 SetupSuppression() {
@@ -609,35 +716,43 @@ SetupHotkeys() {
     for key in Config["MiddleClick"]
         BindClick(key, "Middle")
 
+    for key in Config["Button4"]
+        BindClick(key, "Button4")
+
+    for key in Config["Button5"]
+        BindClick(key, "Button5")
+
     HotIf
 }
 
 ; --- Funciones de Click ---
 
 ClickAction(button) {
+    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (
+        button == "Button4") ? "XButton1" : "XButton2"
+
     if (IsHotkeyPressed(Config["ClickHolder"])) {
         ; Si ClickHolder está activo, alternar estado (Hold/Release)
-        if (GetKeyState(button))
-            Click button " Up"
+        if (GetKeyState(btnKey))
+            SendInput "{Blind}{" btnKey " Up}"
         else
-            Click button " Down"
+            SendInput "{Blind}{" btnKey " Down}"
     } else {
         ; Comportamiento normal
-        Click button " Down"
+        SendInput "{Blind}{" btnKey " Down}"
     }
 }
 
 ClickActionUp(button) {
+    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (
+        button == "Button4") ? "XButton1" : "XButton2"
+
     if (IsHotkeyPressed(Config["ClickHolder"])) {
         ; Si ClickHolder está activo, NO soltamos el click al soltar la tecla
         return
     }
-    Click button " Up"
+    SendInput "{Blind}{" btnKey " Up}"
 }
-
-; ========================================================================================
-;  EJECUCIÓN FINAL
-; ========================================================================================
 
 #Requires AutoHotkey v2.0
 #SingleInstance Force
