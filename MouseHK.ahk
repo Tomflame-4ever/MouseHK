@@ -1,6 +1,7 @@
 ; ========================================================================================
-;  MouseHK (v1.1)
+;  MouseHK (v1.1 - Zero Lag Edition)
 ;  Created by Tomflame with help from Google Antigravity
+;  Refactored with Delta Time & Kernel Injection for smoother scrolling
 ; ========================================================================================
 
 global Config := Map()
@@ -65,8 +66,7 @@ LoadConfig() {
             Config["Button5"] := StrSplit(IniRead(IniFile, "Controls", "Button5", ""), "|")
 
             ; Behavior Modifiers
-            Config["PrecisionMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "PrecisionMode",
-                "Shift"))
+            Config["PrecisionMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "PrecisionMode", "Shift"))
             Config["ScrollMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ScrollMode", "Space"))
             Config["ClickHolder"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ClickHolder", "Numpad0"))
 
@@ -86,8 +86,7 @@ LoadConfig() {
                 }
             }
 
-            Config["ReloadScript"] := ParseUnifiedHotkey(IniRead(IniFile, "Hotkeys", "ReloadScript",
-                "Ctrl + Shift + Alt + Win + F5"))
+            Config["ReloadScript"] := ParseUnifiedHotkey(IniRead(IniFile, "Hotkeys", "ReloadScript", "Ctrl + Shift + Alt + Win + F5"))
         }
     }
 }
@@ -109,7 +108,10 @@ global ScrollDelay := Config["ScrollDelay"]
 global CurrentSpeedX := 0
 global CurrentSpeedY := 0
 global HeldKeys := Map()
-global ScrollCounter := 0
+
+; NUEVAS VARIABLES PARA DELTA TIME SCROLLING
+global ScrollDuration := 0
+global LastScrollTime := 0
 
 ; --- Listas de Teclas Usadas ---
 global UsedKeys := Map()
@@ -160,15 +162,12 @@ ParseUnifiedHotkey(str) {
 
         ahkString := ""
         if (mainKeys.Length == 0) {
-            ; Solo modificadores (ej: Ctrl + Alt) -> ^Alt (el ultimo es la tecla)
             if (modifiers != "") {
                 ahkString := modifiers
             }
         } else if (mainKeys.Length == 1) {
-            ; Modificadores + Tecla (ej: ^!F5)
             ahkString := modifiers . mainKeys[1]
         } else {
-            ; Tecla + Tecla (ej: A & B)
             ahkString := modifiers . mainKeys[1] . " & " . mainKeys[2]
         }
 
@@ -179,8 +178,7 @@ ParseUnifiedHotkey(str) {
 
 IsLockTrigger(str) {
     str := StrUpper(Trim(str))
-    return (InStr(str, "CAPSLOCK") || InStr(str, "NUMLOCK") || InStr(str, "SCROLLLOCK"))
-    && (InStr(str, " ON") || InStr(str, " OFF"))
+    return (InStr(str, "CAPSLOCK") || InStr(str, "NUMLOCK") || InStr(str, "SCROLLLOCK")) && (InStr(str, " ON") || InStr(str, " OFF"))
 }
 
 ParseLockTrigger(str) {
@@ -210,23 +208,19 @@ IsHotkeyPressed(ahkList) {
 }
 
 CheckSingleHotkeyState(hotkeyStr) {
-    ; Limpiar comodines
     hotkeyStr := StrReplace(hotkeyStr, "*", "")
     hotkeyStr := StrReplace(hotkeyStr, "~", "")
     hotkeyStr := StrReplace(hotkeyStr, "$", "")
 
-    ; Detectar combinacion &
     if (InStr(hotkeyStr, "&")) {
         parts := StrSplit(hotkeyStr, "&")
         key1 := Trim(parts[1])
         key2 := Trim(parts[2])
-        ; Manejar modificadores en key1 (ej: ^a & b)
         if (!CheckModifiers(key1, &cleanKey1))
             return false
         return GetKeyState(cleanKey1, "P") && GetKeyState(key2, "P")
     }
 
-    ; Hotkey simple con modificadores
     if (!CheckModifiers(hotkeyStr, &cleanKey))
         return false
 
@@ -242,32 +236,26 @@ CheckSingleHotkeyState(hotkeyStr) {
 
 CheckModifiers(str, &cleanKey) {
     cleanKey := str
-
     if (InStr(str, "^")) {
-        if (!GetKeyState("Ctrl", "P")) {
+        if (!GetKeyState("Ctrl", "P"))
             return false
-        }
         cleanKey := StrReplace(cleanKey, "^", "")
     }
     if (InStr(str, "+")) {
-        if (!GetKeyState("Shift", "P")) {
+        if (!GetKeyState("Shift", "P"))
             return false
-        }
         cleanKey := StrReplace(cleanKey, "+", "")
     }
     if (InStr(str, "!")) {
-        if (!GetKeyState("Alt", "P")) {
+        if (!GetKeyState("Alt", "P"))
             return false
-        }
         cleanKey := StrReplace(cleanKey, "!", "")
     }
     if (InStr(str, "#")) {
-        if (!GetKeyState("LWin", "P") && !GetKeyState("RWin", "P")) {
+        if (!GetKeyState("LWin", "P") && !GetKeyState("RWin", "P"))
             return false
-        }
         cleanKey := StrReplace(cleanKey, "#", "")
     }
-
     return true
 }
 
@@ -292,10 +280,8 @@ SetupToggleHotkeys() {
 
 SetupLockTriggers() {
     for trigger in Config["LockTriggers"] {
-        ; Bind to the key itself (pass-through with ~) to check state on change
         try Hotkey "~*" . trigger.Key, CheckLockState, "S"
     }
-    ; Initial check
     CheckLockState()
 }
 
@@ -306,7 +292,7 @@ CheckLockState(*) {
     shouldBeActive := false
 
     for trigger in Config["LockTriggers"] {
-        currentState := GetKeyState(trigger.Key, "T") ; T = Toggle State
+        currentState := GetKeyState(trigger.Key, "T") 
         if (currentState == trigger.State) {
             shouldBeActive := true
             break
@@ -315,10 +301,10 @@ CheckLockState(*) {
 
     if (shouldBeActive) {
         if (A_IsSuspended)
-            SetSuspendState(true) ; true = active (confusing naming in helper, let's fix)
+            SetSuspendState(true) 
     } else {
         if (!A_IsSuspended)
-            SetSuspendState(false) ; false = inactive
+            SetSuspendState(false) 
     }
 }
 
@@ -328,10 +314,7 @@ ToggleSuspendAction(ThisHotkey) {
 
 SyncLockKeys(active) {
     for trigger in Config["LockTriggers"] {
-        ; If active, we want the state to MATCH the trigger (e.g. CapsLock OFF)
-        ; If inactive, we want the state to be OPPOSITE (e.g. CapsLock ON)
         targetState := active ? trigger.State : !trigger.State
-
         stateStr := targetState ? "On" : "Off"
 
         if (trigger.Key = "CapsLock")
@@ -350,7 +333,7 @@ SyncLockKeys(active) {
 ; ========================================================================================
 
 ToggleSuspend() {
-    SetSuspendState(A_IsSuspended) ; Toggle
+    SetSuspendState(A_IsSuspended)
 }
 
 SetSuspendState(makeActive) {
@@ -369,11 +352,16 @@ SetSuspendState(makeActive) {
 }
 
 ClearState() {
-    global HeldKeys, CurrentSpeedX, CurrentSpeedY, ScrollCounter
+    global HeldKeys, CurrentSpeedX, CurrentSpeedY
+    global ScrollDuration, LastScrollTime
+
     HeldKeys.Clear()
     CurrentSpeedX := 0
     CurrentSpeedY := 0
-    ScrollCounter := 0
+    
+    ; Resetear variables de scroll
+    ScrollDuration := 0
+    LastScrollTime := 0
 
     if (GetKeyState("LButton"))
         Click "Left Up"
@@ -392,7 +380,6 @@ IsActiveContext(HotkeyName) {
 }
 
 SetupSuppression() {
-    ; Si la supresión está desactivada en la config, no hacemos nada
     if (Config["SuppressKeys"] != 1)
         return
 
@@ -415,8 +402,6 @@ SetupSuppression() {
     }
 
     ; --- 3. Numpad (Excluyendo Enter, Del) ---
-    ; NumpadEnter y NumpadDel se dejan libres por petición del usuario.
-    ; NumpadDot SI se bloquea.
     numpadKeys := ["Numpad0", "Numpad1", "Numpad2", "Numpad3", "Numpad4",
         "Numpad5", "Numpad6", "Numpad7", "Numpad8", "Numpad9",
         "NumpadDiv", "NumpadMult", "NumpadAdd", "NumpadSub", "NumpadDot"]
@@ -428,11 +413,8 @@ SetupSuppression() {
     }
 
     ; --- 4. Símbolos y Puntuación ---
-    ; Nota: Space se excluye explícitamente.
     extraChars := ["'", "[", "]", "\", "/", "``", "-", ",", ".", ";", "=", "ñ", "ç", "Ç"]
-    ; Añadimos símbolos shift-mapped comunes para asegurar
-    shiftSymbols := ["!", "`"", "·", "$", "%", "&", "(", ")", "?", "¿", "¡", "*", "+", "_", ":", "<", ">", "|", "@",
-        "#", "^"]
+    shiftSymbols := ["!", "`"", "·", "$", "%", "&", "(", ")", "?", "¿", "¡", "*", "+", "_", ":", "<", ">", "|", "@", "#", "^"]
 
     allSymbols := []
     allSymbols.Push(extraChars*)
@@ -440,7 +422,6 @@ SetupSuppression() {
 
     for char in allSymbols {
         normalized := StrLower(NormalizeKey(char))
-        ; Solo suprimir si no es una tecla usada
         if (!UsedKeys.Has(normalized)) {
             try Hotkey char, SuppressAction
         }
@@ -450,11 +431,6 @@ SetupSuppression() {
 }
 
 BindFunctionalKeys() {
-    ; Las teclas funcionales asignadas SIEMPRE deben suprimirse para evitar conflictos,
-    ; independientemente de la opción global SuppressKeys (que es para teclas NO asignadas).
-
-    ; Usamos una condición estricta: Si el script NO está suspendido, bloqueamos estas teclas.
-    ; Esto ignora si hay otros modificadores presionados (ej: Ctrl+NumpadAdd también se bloqueará).
     HotIf (*) => !A_IsSuspended
 
     functionalLists := [Config["PrecisionMode"], Config["ScrollMode"], Config["ClickHolder"]]
@@ -465,7 +441,6 @@ BindFunctionalKeys() {
             if (baseKey != "" && !IsPureModifier(baseKey)) {
                 normalized := StrLower(NormalizeKey(baseKey))
                 if (!UsedKeys.Has(normalized)) {
-                    ; Bloquear tanto la pulsación como la liberación para evitar "leaking"
                     try Hotkey "*" . baseKey, SuppressAction
                     try Hotkey "*" . baseKey . " Up", SuppressAction
                     UsedKeys[normalized] := 1
@@ -478,7 +453,6 @@ BindFunctionalKeys() {
 }
 
 ExtractBaseKey(hk) {
-    ; Limpiar modificadores AHK
     hk := StrReplace(hk, "*", "")
     hk := StrReplace(hk, "~", "")
     hk := StrReplace(hk, "$", "")
@@ -487,7 +461,6 @@ ExtractBaseKey(hk) {
     hk := StrReplace(hk, "!", "")
     hk := StrReplace(hk, "#", "")
 
-    ; Si es una combinación (Key & Key), tomar la segunda tecla (la acción)
     if (InStr(hk, "&")) {
         parts := StrSplit(hk, "&")
         return Trim(parts[2])
@@ -508,17 +481,21 @@ SuppressAction(ThisHotkey) {
 }
 
 ; ========================================================================================
-;  MOTOR DE MOVIMIENTO
+;  MOTOR DE MOVIMIENTO (OPTIMIZADO CON DLLCALL + DELTA TIME)
 ; ========================================================================================
 
 SetTimer MoveCursor, 10
 
 MoveCursor() {
-    global CurrentSpeedX, CurrentSpeedY, ScrollCounter
-    global MaxSpeed, Acceleration, PrecisionSpeed, ScrollDelay
+    global CurrentSpeedX, CurrentSpeedY
+    global ScrollDuration, LastScrollTime
+    global MaxSpeed, Acceleration, PrecisionSpeed
 
     if (A_IsSuspended)
         return
+    
+    ; Permitir interrupciones leves para evitar tartamudeo en CPU alta
+    Critical "Off"
 
     TargetX := GetTargetDirection("x")
     TargetY := GetTargetDirection("y")
@@ -527,29 +504,62 @@ MoveCursor() {
     ScrollMode := IsHotkeyPressed(Config["ScrollMode"])
 
     if (ScrollMode) {
+        ; --- MODO SCROLL (ZERO LAG) ---
         CurrentSpeedX := 0
         CurrentSpeedY := 0
 
         if (TargetX != 0 || TargetY != 0) {
-            ScrollCounter += 1
-            if (ScrollCounter >= ScrollDelay) {
-                if (TargetY < 0)
-                    SendInput "{WheelUp}"
-                else if (TargetY > 0)
-                    SendInput "{WheelDown}"
+            
+            currentTime := A_TickCount
+            
+            ; Inicializar tiempo si es el primer ciclo
+            if (LastScrollTime == 0) {
+                LastScrollTime := currentTime - 100 
+                ScrollDuration := 0
+            }
 
-                if (TargetX < 0)
-                    SendInput "{WheelLeft}"
-                else if (TargetX > 0)
-                    SendInput "{WheelRight}"
+            timeSinceLast := currentTime - LastScrollTime
+            
+            if (timeSinceLast < 200) {
+                 ScrollDuration += timeSinceLast
+            }
 
-                ScrollCounter := 0
+            ; Calculo de delay dinámico (Aceleración)
+            tickEstimate := ScrollDuration / 10
+            requiredDelay := (tickEstimate < 40) ? 90 : (tickEstimate < 100) ? 60 : 30
+
+            if (currentTime - LastScrollTime >= requiredDelay) {
+                
+                ; Inyección directa al Kernel (Evita SendInput Lag)
+                
+                ; Vertical
+                if (TargetY < 0) ; Up
+                    DllCall("mouse_event", "UInt", 0x800, "UInt", 0, "UInt", 0, "UInt", 120, "UInt", 0)
+                else if (TargetY > 0) ; Down
+                    DllCall("mouse_event", "UInt", 0x800, "UInt", 0, "UInt", 0, "UInt", -120, "UInt", 0)
+                
+                ; Horizontal
+                if (TargetX < 0) ; Left
+                    DllCall("mouse_event", "UInt", 0x1000, "UInt", 0, "UInt", 0, "UInt", -120, "UInt", 0)
+                else if (TargetX > 0) ; Right
+                    DllCall("mouse_event", "UInt", 0x1000, "UInt", 0, "UInt", 0, "UInt", 120, "UInt", 0)
+                
+                LastScrollTime := currentTime
             }
         } else {
-            ScrollCounter := ScrollDelay
+            ; Resetear aceleración
+            ScrollDuration := 0
+            LastScrollTime := 0 
         }
 
     } else {
+        ; --- MODO CURSOR ---
+        ; Resetear scroll si salimos del modo
+        if (ScrollDuration > 0) {
+            ScrollDuration := 0
+            LastScrollTime := 0
+        }
+
         if (PrecisionMode) {
             CurrentSpeedX := TargetX * PrecisionSpeed
             CurrentSpeedY := TargetY * PrecisionSpeed
@@ -558,8 +568,10 @@ MoveCursor() {
             ApplyAcceleration("y", TargetY)
         }
 
-        if (CurrentSpeedX != 0 || CurrentSpeedY != 0)
-            MouseMove CurrentSpeedX, CurrentSpeedY, 0, "R"
+        if (CurrentSpeedX != 0 || CurrentSpeedY != 0) {
+            ; Usar DllCall para movimiento (Más ligero que MouseMove)
+            DllCall("mouse_event", "UInt", 0x0001, "Int", Round(CurrentSpeedX), "Int", Round(CurrentSpeedY), "UInt", 0, "UInt", 0)
+        }
     }
 }
 
@@ -617,7 +629,6 @@ GetTargetDirection(axis) {
 ;  BINDING DINÁMICO DE HOTKEYS
 ; ========================================================================================
 
-; --- Normalización de Teclas ---
 NormalizeKey(key) {
     key := Trim(key)
     if (key = "ñ" || key = "Ñ")
@@ -651,10 +662,8 @@ BindMove(key, axis, dir) {
     key := NormalizeKey(key)
     UsedKeys[StrLower(key)] := 1
 
-    ; Bind Main Key
     DoBindMove(key, axis, dir)
 
-    ; Bind Variant (if any)
     variant := GetNumpadVariant(key)
     if (variant != "") {
         UsedKeys[StrLower(variant)] := 1
@@ -674,10 +683,8 @@ BindClick(key, button) {
     key := NormalizeKey(key)
     UsedKeys[StrLower(key)] := 1
 
-    ; Bind Main Key
     DoBindClick(key, button)
 
-    ; Bind Variant (if any)
     variant := GetNumpadVariant(key)
     if (variant != "") {
         UsedKeys[StrLower(variant)] := 1
@@ -696,29 +703,22 @@ SetupHotkeys() {
     ; --- Movimiento ---
     for key in Config["Up"]
         BindMove(key, "y", -1)
-
     for key in Config["Down"]
         BindMove(key, "y", 1)
-
     for key in Config["Left"]
         BindMove(key, "x", -1)
-
     for key in Config["Right"]
         BindMove(key, "x", 1)
 
     ; --- Clicks ---
     for key in Config["LeftClick"]
         BindClick(key, "Left")
-
     for key in Config["RightClick"]
         BindClick(key, "Right")
-
     for key in Config["MiddleClick"]
         BindClick(key, "Middle")
-
     for key in Config["Button4"]
         BindClick(key, "Button4")
-
     for key in Config["Button5"]
         BindClick(key, "Button5")
 
@@ -728,27 +728,22 @@ SetupHotkeys() {
 ; --- Funciones de Click ---
 
 ClickAction(button) {
-    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (
-        button == "Button4") ? "XButton1" : "XButton2"
+    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (button == "Button4") ? "XButton1" : "XButton2"
 
     if (IsHotkeyPressed(Config["ClickHolder"])) {
-        ; Si ClickHolder está activo, alternar estado (Hold/Release)
         if (GetKeyState(btnKey))
             SendInput "{Blind}{" btnKey " Up}"
         else
             SendInput "{Blind}{" btnKey " Down}"
     } else {
-        ; Comportamiento normal
         SendInput "{Blind}{" btnKey " Down}"
     }
 }
 
 ClickActionUp(button) {
-    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (
-        button == "Button4") ? "XButton1" : "XButton2"
+    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (button == "Button4") ? "XButton1" : "XButton2"
 
     if (IsHotkeyPressed(Config["ClickHolder"])) {
-        ; Si ClickHolder está activo, NO soltamos el click al soltar la tecla
         return
     }
     SendInput "{Blind}{" btnKey " Up}"
