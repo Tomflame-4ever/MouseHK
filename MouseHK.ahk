@@ -1,7 +1,7 @@
 ; ========================================================================================
-;  MouseHK (v1.1 - Zero Lag Edition)
+;  MouseHK (v1.2- Zero Lag Edition)
 ;  Created by Tomflame with help from Google Antigravity
-;  Refactored with Delta Time & Kernel Injection for smoother scrolling
+;  - Refactored with Delta Time & Kernel Injection for smoother scrolling by LukaV18
 ; ========================================================================================
 
 global Config := Map()
@@ -66,7 +66,8 @@ LoadConfig() {
             Config["Button5"] := StrSplit(IniRead(IniFile, "Controls", "Button5", ""), "|")
 
             ; Behavior Modifiers
-            Config["PrecisionMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "PrecisionMode", "Shift"))
+            Config["PrecisionMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "PrecisionMode",
+                "Shift"))
             Config["ScrollMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ScrollMode", "Space"))
             Config["ClickHolder"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ClickHolder", "Numpad0"))
 
@@ -86,7 +87,8 @@ LoadConfig() {
                 }
             }
 
-            Config["ReloadScript"] := ParseUnifiedHotkey(IniRead(IniFile, "Hotkeys", "ReloadScript", "Ctrl + Shift + Alt + Win + F5"))
+            Config["ReloadScript"] := ParseUnifiedHotkey(IniRead(IniFile, "Hotkeys", "ReloadScript",
+                "Ctrl + Shift + Alt + Win + F5"))
         }
     }
 }
@@ -178,7 +180,8 @@ ParseUnifiedHotkey(str) {
 
 IsLockTrigger(str) {
     str := StrUpper(Trim(str))
-    return (InStr(str, "CAPSLOCK") || InStr(str, "NUMLOCK") || InStr(str, "SCROLLLOCK")) && (InStr(str, " ON") || InStr(str, " OFF"))
+    return (InStr(str, "CAPSLOCK") || InStr(str, "NUMLOCK") || InStr(str, "SCROLLLOCK")) && (InStr(str, " ON") || InStr(
+        str, " OFF"))
 }
 
 ParseLockTrigger(str) {
@@ -292,7 +295,7 @@ CheckLockState(*) {
     shouldBeActive := false
 
     for trigger in Config["LockTriggers"] {
-        currentState := GetKeyState(trigger.Key, "T") 
+        currentState := GetKeyState(trigger.Key, "T")
         if (currentState == trigger.State) {
             shouldBeActive := true
             break
@@ -301,10 +304,10 @@ CheckLockState(*) {
 
     if (shouldBeActive) {
         if (A_IsSuspended)
-            SetSuspendState(true) 
+            SetSuspendState(true)
     } else {
         if (!A_IsSuspended)
-            SetSuspendState(false) 
+            SetSuspendState(false)
     }
 }
 
@@ -358,7 +361,7 @@ ClearState() {
     HeldKeys.Clear()
     CurrentSpeedX := 0
     CurrentSpeedY := 0
-    
+
     ; Resetear variables de scroll
     ScrollDuration := 0
     LastScrollTime := 0
@@ -414,7 +417,8 @@ SetupSuppression() {
 
     ; --- 4. Símbolos y Puntuación ---
     extraChars := ["'", "[", "]", "\", "/", "``", "-", ",", ".", ";", "=", "ñ", "ç", "Ç"]
-    shiftSymbols := ["!", "`"", "·", "$", "%", "&", "(", ")", "?", "¿", "¡", "*", "+", "_", ":", "<", ">", "|", "@", "#", "^"]
+    shiftSymbols := ["!", "`"", "·", "$", "%", "&", "(", ")", "?", "¿", "¡", "*", "+", "_", ":", "<", ">", "|", "@",
+        "#", "^"]
 
     allSymbols := []
     allSymbols.Push(extraChars*)
@@ -493,7 +497,7 @@ MoveCursor() {
 
     if (A_IsSuspended)
         return
-    
+
     ; Permitir interrupciones leves para evitar tartamudeo en CPU alta
     Critical "Off"
 
@@ -509,19 +513,19 @@ MoveCursor() {
         CurrentSpeedY := 0
 
         if (TargetX != 0 || TargetY != 0) {
-            
+
             currentTime := A_TickCount
-            
+
             ; Inicializar tiempo si es el primer ciclo
             if (LastScrollTime == 0) {
-                LastScrollTime := currentTime - 100 
+                LastScrollTime := currentTime - 100
                 ScrollDuration := 0
             }
 
             timeSinceLast := currentTime - LastScrollTime
-            
+
             if (timeSinceLast < 200) {
-                 ScrollDuration += timeSinceLast
+                ScrollDuration += timeSinceLast
             }
 
             ; Calculo de delay dinámico (Aceleración)
@@ -529,27 +533,27 @@ MoveCursor() {
             requiredDelay := (tickEstimate < 40) ? 90 : (tickEstimate < 100) ? 60 : 30
 
             if (currentTime - LastScrollTime >= requiredDelay) {
-                
+
                 ; Inyección directa al Kernel (Evita SendInput Lag)
-                
+
                 ; Vertical
                 if (TargetY < 0) ; Up
                     DllCall("mouse_event", "UInt", 0x800, "UInt", 0, "UInt", 0, "UInt", 120, "UInt", 0)
                 else if (TargetY > 0) ; Down
                     DllCall("mouse_event", "UInt", 0x800, "UInt", 0, "UInt", 0, "UInt", -120, "UInt", 0)
-                
+
                 ; Horizontal
                 if (TargetX < 0) ; Left
                     DllCall("mouse_event", "UInt", 0x1000, "UInt", 0, "UInt", 0, "UInt", -120, "UInt", 0)
                 else if (TargetX > 0) ; Right
                     DllCall("mouse_event", "UInt", 0x1000, "UInt", 0, "UInt", 0, "UInt", 120, "UInt", 0)
-                
+
                 LastScrollTime := currentTime
             }
         } else {
             ; Resetear aceleración
             ScrollDuration := 0
-            LastScrollTime := 0 
+            LastScrollTime := 0
         }
 
     } else {
@@ -570,7 +574,8 @@ MoveCursor() {
 
         if (CurrentSpeedX != 0 || CurrentSpeedY != 0) {
             ; Usar DllCall para movimiento (Más ligero que MouseMove)
-            DllCall("mouse_event", "UInt", 0x0001, "Int", Round(CurrentSpeedX), "Int", Round(CurrentSpeedY), "UInt", 0, "UInt", 0)
+            DllCall("mouse_event", "UInt", 0x0001, "Int", Round(CurrentSpeedX), "Int", Round(CurrentSpeedY), "UInt", 0,
+            "UInt", 0)
         }
     }
 }
@@ -728,7 +733,8 @@ SetupHotkeys() {
 ; --- Funciones de Click ---
 
 ClickAction(button) {
-    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (button == "Button4") ? "XButton1" : "XButton2"
+    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (
+        button == "Button4") ? "XButton1" : "XButton2"
 
     if (IsHotkeyPressed(Config["ClickHolder"])) {
         if (GetKeyState(btnKey))
@@ -741,7 +747,8 @@ ClickAction(button) {
 }
 
 ClickActionUp(button) {
-    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (button == "Button4") ? "XButton1" : "XButton2"
+    btnKey := (button == "Left") ? "LButton" : (button == "Right") ? "RButton" : (button == "Middle") ? "MButton" : (
+        button == "Button4") ? "XButton1" : "XButton2"
 
     if (IsHotkeyPressed(Config["ClickHolder"])) {
         return

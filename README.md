@@ -1,4 +1,4 @@
-# 🖱️ MouseHK (v1.1)
+# 🖱️ MouseHK (v1.2)
 
 **Transform your keyboard into a high-precision mouse.**
 
@@ -74,6 +74,11 @@ Press the **Click Holder** key to toggle the left mouse button DOWN. Move the cu
 ---
 
 ## 📝 Changelog
+
+### v1.2 - Zero Lag Edition (by LukaV18)
+*   **New Engine:** **Kernel Injection**: Replaced `MouseMove` with `DllCall("mouse_event")` for zero-latency cursor movement.
+*   **New Feature:** **Delta Time Scrolling**: Scrolling speed now adjusts dynamically based on frame time, ensuring silky smooth scrolling regardless of system load.
+*   **Optimization:** **Zero Lag**: Significant reduction in input latency and CPU usage.
 
 ### v1.1 - Enhanced Control
 *   **New:** **Lock Key Triggers**: Toggle the script automatically based on `CapsLock`, `NumLock`, or `ScrollLock` state (e.g., `ToggleMouse=CapsLock OFF`).
