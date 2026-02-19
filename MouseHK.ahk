@@ -55,21 +55,21 @@ LoadConfig() {
             Config["ScrollDelay"] := IniRead(IniFile, "Scroll", "ScrollDelay", Config["ScrollDelay"])
 
             ; Controls (Parse pipe-separated values)
-            Config["Up"] := StrSplit(IniRead(IniFile, "Controls", "Up", "Numpad8"), "|")
-            Config["Down"] := StrSplit(IniRead(IniFile, "Controls", "Down", "Numpad5"), "|")
-            Config["Left"] := StrSplit(IniRead(IniFile, "Controls", "Left", "Numpad4"), "|")
-            Config["Right"] := StrSplit(IniRead(IniFile, "Controls", "Right", "Numpad6"), "|")
-            Config["LeftClick"] := StrSplit(IniRead(IniFile, "Controls", "LeftClick", "Numpad7"), "|")
-            Config["RightClick"] := StrSplit(IniRead(IniFile, "Controls", "RightClick", "Numpad9"), "|")
-            Config["MiddleClick"] := StrSplit(IniRead(IniFile, "Controls", "MiddleClick", "NumpadDiv"), "|")
-            Config["Button4"] := StrSplit(IniRead(IniFile, "Controls", "Button4", ""), "|")
-            Config["Button5"] := StrSplit(IniRead(IniFile, "Controls", "Button5", ""), "|")
+            Config["Up"] := ParseList(IniRead(IniFile, "Controls", "Up", "W | O"))
+            Config["Down"] := ParseList(IniRead(IniFile, "Controls", "Down", "S | L"))
+            Config["Left"] := ParseList(IniRead(IniFile, "Controls", "Left", "A | K"))
+            Config["Right"] := ParseList(IniRead(IniFile, "Controls", "Right", "D | ; | Ñ"))
+            Config["LeftClick"] := ParseList(IniRead(IniFile, "Controls", "LeftClick", "E | I"))
+            Config["RightClick"] := ParseList(IniRead(IniFile, "Controls", "RightClick", "Q | P"))
+            Config["MiddleClick"] := ParseList(IniRead(IniFile, "Controls", "MiddleClick", "F | J"))
+            Config["Button4"] := ParseList(IniRead(IniFile, "Controls", "Button4", ""))
+            Config["Button5"] := ParseList(IniRead(IniFile, "Controls", "Button5", ""))
 
             ; Behavior Modifiers
             Config["PrecisionMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "PrecisionMode",
                 "Shift"))
             Config["ScrollMode"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ScrollMode", "Space"))
-            Config["ClickHolder"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ClickHolder", "Numpad0"))
+            Config["ClickHolder"] := ParseUnifiedHotkey(IniRead(IniFile, "BehaviorModifiers", "ClickHolder", "Shift"))
 
             ; Hotkeys (Unified Parser)
             rawToggle := IniRead(IniFile, "Hotkeys", "ToggleMouse", "Shift + Space")
@@ -114,6 +114,7 @@ global HeldKeys := Map()
 ; NUEVAS VARIABLES PARA DELTA TIME SCROLLING
 global ScrollDuration := 0
 global LastScrollTime := 0
+global ScrollStartTime := 0
 
 ; --- Listas de Teclas Usadas ---
 global UsedKeys := Map()
@@ -134,6 +135,16 @@ if (Config["StartActive"]) {
 ; ========================================================================================
 ;  HELPER FUNCTIONS (PARSER)
 ; ========================================================================================
+
+ParseList(str) {
+    result := []
+    for item in StrSplit(str, "|") {
+        item := Trim(item)
+        if (item != "")
+            result.Push(item)
+    }
+    return result
+}
 
 ParseUnifiedHotkey(str) {
     result := []
@@ -356,7 +367,7 @@ SetSuspendState(makeActive) {
 
 ClearState() {
     global HeldKeys, CurrentSpeedX, CurrentSpeedY
-    global ScrollDuration, LastScrollTime
+    global ScrollDuration, LastScrollTime, ScrollStartTime
 
     HeldKeys.Clear()
     CurrentSpeedX := 0
@@ -365,6 +376,7 @@ ClearState() {
     ; Resetear variables de scroll
     ScrollDuration := 0
     LastScrollTime := 0
+    ScrollStartTime := 0
 
     if (GetKeyState("LButton"))
         Click "Left Up"
@@ -393,7 +405,7 @@ SetupSuppression() {
         char := Chr(96 + A_Index)
         normalized := StrLower(NormalizeKey(char))
         if (!UsedKeys.Has(normalized))
-            Hotkey char, SuppressAction
+            try Hotkey normalized, SuppressAction
     }
 
     ; --- 2. Números (0-9) ---
@@ -401,18 +413,28 @@ SetupSuppression() {
         num := A_Index - 1
         normalized := String(num)
         if (!UsedKeys.Has(normalized))
-            Hotkey num, SuppressAction
+            try Hotkey normalized, SuppressAction
     }
 
-    ; --- 3. Numpad (Excluyendo Enter, Del) ---
+    ; --- 3. Numpad (Excluyendo Enter, Del) + Variants (NumLock Off) ---
     numpadKeys := ["Numpad0", "Numpad1", "Numpad2", "Numpad3", "Numpad4",
         "Numpad5", "Numpad6", "Numpad7", "Numpad8", "Numpad9",
         "NumpadDiv", "NumpadMult", "NumpadAdd", "NumpadSub", "NumpadDot"]
 
     for key in numpadKeys {
-        normalized := StrLower(NormalizeKey(key))
+        nk := NormalizeKey(key)
+        normalized := StrLower(nk)
         if (!UsedKeys.Has(normalized))
-            try Hotkey key, SuppressAction
+            try Hotkey nk, SuppressAction
+
+        ; Suppress variant (e.g. NumpadUp) if not used
+        variant := GetNumpadVariant(key)
+        if (variant != "") {
+            nv := NormalizeKey(variant)
+            nnormalized := StrLower(nv)
+            if (!UsedKeys.Has(nnormalized))
+                try Hotkey nv, SuppressAction
+        }
     }
 
     ; --- 4. Símbolos y Puntuación ---
@@ -425,9 +447,10 @@ SetupSuppression() {
     allSymbols.Push(shiftSymbols*)
 
     for char in allSymbols {
-        normalized := StrLower(NormalizeKey(char))
+        nk := NormalizeKey(char)
+        normalized := StrLower(nk)
         if (!UsedKeys.Has(normalized)) {
-            try Hotkey char, SuppressAction
+            try Hotkey nk, SuppressAction
         }
     }
 
@@ -517,20 +540,16 @@ MoveCursor() {
             currentTime := A_TickCount
 
             ; Inicializar tiempo si es el primer ciclo
-            if (LastScrollTime == 0) {
-                LastScrollTime := currentTime - 100
-                ScrollDuration := 0
+            if (ScrollStartTime == 0) {
+                ScrollStartTime := currentTime
+                LastScrollTime := currentTime - (15 * ScrollDelay) ; Trigger first scroll immediately
             }
 
-            timeSinceLast := currentTime - LastScrollTime
-
-            if (timeSinceLast < 200) {
-                ScrollDuration += timeSinceLast
-            }
+            ScrollDuration := currentTime - ScrollStartTime
 
             ; Calculo de delay dinámico (Aceleración)
             tickEstimate := ScrollDuration / 10
-            requiredDelay := (tickEstimate < 40) ? 90 : (tickEstimate < 100) ? 60 : 30
+            requiredDelay := (tickEstimate < 40) ? (15 * ScrollDelay) : (tickEstimate < 100) ? (10 * ScrollDelay) : (5 * ScrollDelay)
 
             if (currentTime - LastScrollTime >= requiredDelay) {
 
@@ -554,6 +573,7 @@ MoveCursor() {
             ; Resetear aceleración
             ScrollDuration := 0
             LastScrollTime := 0
+            ScrollStartTime := 0
         }
 
     } else {
@@ -562,6 +582,7 @@ MoveCursor() {
         if (ScrollDuration > 0) {
             ScrollDuration := 0
             LastScrollTime := 0
+            ScrollStartTime := 0
         }
 
         if (PrecisionMode) {
@@ -581,17 +602,19 @@ MoveCursor() {
 }
 
 ApplyAcceleration(axis, target) {
-    global CurrentSpeedX, CurrentSpeedY, MaxSpeed, Acceleration
+    global CurrentSpeedX, CurrentSpeedY, MaxSpeed, Acceleration, BaseSpeed
     speed := (axis == "x") ? CurrentSpeedX : CurrentSpeedY
 
     if (target != 0) {
-        if (speed * target < 0)
-            speed := 0
-        speed += target * Acceleration
-        if (speed > MaxSpeed)
-            speed := MaxSpeed
-        else if (speed < -MaxSpeed)
-            speed := -MaxSpeed
+        if (speed == 0 || (speed * target < 0))
+            speed := target * BaseSpeed
+        else {
+            speed += target * Acceleration
+            if (speed > MaxSpeed)
+                speed := MaxSpeed
+            else if (speed < -MaxSpeed)
+                speed := -MaxSpeed
+        }
     } else {
         speed := 0
     }
@@ -677,8 +700,10 @@ BindMove(key, axis, dir) {
 }
 
 DoBindMove(key, axis, dir) {
-    Hotkey "*$" . key, (ThisHotkey) => Press(key, axis, dir)
-    Hotkey "*$" . key . " up", (ThisHotkey) => Release(key)
+    try {
+        Hotkey "*$" . key, (ThisHotkey) => Press(key, axis, dir)
+        Hotkey "*$" . key . " up", (ThisHotkey) => Release(key)
+    }
 }
 
 BindClick(key, button) {
@@ -698,8 +723,10 @@ BindClick(key, button) {
 }
 
 DoBindClick(key, button) {
-    Hotkey "*$" . key, (ThisHotkey) => ClickAction(button)
-    Hotkey "*$" . key . " up", (ThisHotkey) => ClickActionUp(button)
+    try {
+        Hotkey "*$" . key, (ThisHotkey) => ClickAction(button)
+        Hotkey "*$" . key . " up", (ThisHotkey) => ClickActionUp(button)
+    }
 }
 
 SetupHotkeys() {
